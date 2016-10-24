@@ -21,6 +21,7 @@ namespace TOAST
     public partial class MainWindow : Window
     {
         Keyboard kbd;
+        TouchAnalyzer touchAnalyzer = new TouchAnalyzer();
         TextBlock[] candidates = new TextBlock[5];
         public MainWindow()
         {
@@ -41,9 +42,40 @@ namespace TOAST
             }
             mainCanvas.Background = Brushes.Red;
             mainCanvas.PreviewMouseUp += MainCanvas_MouseUp;
+            mainCanvas.TouchDown += MainCanvas_TouchDown;
+            mainCanvas.TouchMove += MainCanvas_TouchMove;
+            mainCanvas.TouchUp += MainCanvas_TouchUp;
             kbd = new Keyboard();
             kbd.CandidateChange += Kbd_CandidateChange;
             kbd.drawKeyboard(mainCanvas);
+            touchAnalyzer.registerHandPosition += TouchAnalyzer_registerHandPosition;
+        }
+
+        private void TouchAnalyzer_registerHandPosition(object sender, PositionParams leftPositionParams, PositionParams rightPositionParams)
+        {
+            kbd.LeftKeyboardParams = leftPositionParams;
+            kbd.RightKeyboardParams = rightPositionParams;
+        }
+
+        private void MainCanvas_TouchUp(object sender, TouchEventArgs e)
+        {
+            int id = e.TouchDevice.Id;
+            Point pos = e.GetTouchPoint(mainCanvas).Position;
+            touchAnalyzer.touchUp(pos, id);
+        }
+
+        private void MainCanvas_TouchMove(object sender, TouchEventArgs e)
+        {
+            int id = e.TouchDevice.Id;
+            Point pos = e.GetTouchPoint(mainCanvas).Position;
+            touchAnalyzer.touchMove(pos, id);
+        }
+
+        private void MainCanvas_TouchDown(object sender, TouchEventArgs e)
+        {
+            int id = e.TouchDevice.Id;
+            Point pos = e.GetTouchPoint(mainCanvas).Position;
+            touchAnalyzer.touchDown(pos, id);
         }
 
         private void MainCanvas_MouseUp(object sender, MouseButtonEventArgs e)
