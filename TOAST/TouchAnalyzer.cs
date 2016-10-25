@@ -24,10 +24,11 @@ namespace TOAST
             if (screenPoints.Count == 8)
             {
                 //register two hand
-                var sortedPoints = from t in screenPoints orderby t.Value.X select t.Value;
-                PositionParams left = Config
-                registerHand(null);
-
+                var sortedPoints = (from t in screenPoints orderby t.Value.X select t.Value).ToList();
+                PositionParams left = Config.registerPosition(sortedPoints.Take(4).ToList(), 0);
+                sortedPoints.RemoveRange(0, 4);                
+                PositionParams right = Config.registerPosition(sortedPoints, 1);
+                registerHand(left, right);
             }
         }
         public void touchMove(Point pos, int id)
