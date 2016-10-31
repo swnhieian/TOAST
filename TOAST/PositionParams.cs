@@ -13,26 +13,29 @@ namespace TOAST
         private double offsetX, offsetY;
         private double scaleX, scaleY;
         private double rotateAngle;
+        private double centerX, centerY;
         private RotateTransform rotTransform;
 
-        public PositionParams(double xOffset, double yOffset, double xScale, double yScale, double angle)
+        public PositionParams(double xOffset, double yOffset, double xScale, double yScale, double angle, double centerX, double centerY)
         {
             this.offsetX = xOffset;
             this.offsetY = yOffset;
             this.scaleX = xScale;
             this.scaleY = yScale;
             this.rotateAngle = angle;
-            rotTransform = new RotateTransform(rotateAngle, offsetX, OffsetY);
+            this.centerX = centerX;
+            this.centerY = centerY;
+            RotTransform = new RotateTransform(rotateAngle,scaleX * centerX + offsetX, scaleY * centerY + OffsetY);
         }
         public Point transform(Point pos)
         {
             double newX = scaleX * pos.X + offsetX;
             double newY = scaleY * pos.Y + offsetY;
-            return rotTransform.Transform(new Point(newX, newY));
+            return RotTransform.Transform(new Point(newX, newY));
         }
         public Point inverseTransform(Point pos)
         {
-            Point tempP = rotTransform.Inverse.Transform(pos);
+            Point tempP = RotTransform.Inverse.Transform(pos);
             double newX = (pos.X - offsetX) / scaleX;
             double newY = (pos.Y - offsetY) / scaleY;
             return new Point(newX, newY);
@@ -48,6 +51,7 @@ namespace TOAST
             set
             {
                 offsetX = value;
+                rotTransform.CenterX = centerX * scaleX + value;
             }
         }
 
@@ -61,6 +65,7 @@ namespace TOAST
             set
             {
                 offsetY = value;
+                RotTransform.CenterY = centerY * scaleY + value;
             }
         }
 
@@ -74,6 +79,7 @@ namespace TOAST
             set
             {
                 scaleX = value;
+                RotTransform.CenterX = CenterX * value + offsetX;
             }
         }
 
@@ -87,6 +93,7 @@ namespace TOAST
             set
             {
                 scaleY = value;
+                RotTransform.CenterY = CenterY * value + OffsetY;
             }
         }
 
@@ -100,6 +107,48 @@ namespace TOAST
             set
             {
                 rotateAngle = value;
+                rotTransform.Angle = value;
+            }
+        }
+
+        public RotateTransform RotTransform
+        {
+            get
+            {
+                return rotTransform;
+            }
+
+            set
+            {
+                rotTransform = value;
+            }
+        }
+
+        public double CenterX
+        {
+            get
+            {
+                return centerX;
+            }
+
+            set
+            {
+                centerX = value;
+                rotTransform.CenterX = value * scaleX + offsetX;
+            }
+        }
+
+        public double CenterY
+        {
+            get
+            {
+                return centerY;
+            }
+
+            set
+            {
+                centerY = value;
+                RotTransform.CenterY = value * scaleY + OffsetY;
             }
         }
     }

@@ -20,17 +20,21 @@ namespace TOAST
         {
             int n = pointList.Count;
             double a = fitLine(pointList).Item1;
-            PositionParams ret = new PositionParams(0,0,0,0,0);
-            ret.RotateAngle = Math.Atan(a);
+            PositionParams ret = new PositionParams(0,0,0,0,0,0,0);
+            ret.RotateAngle = Math.Atan(a) * 180 / Math.PI;
             ret.ScaleX = (pointList[n - 1].X - pointList[0].X) / ((n - 1) * keyWidth);
             ret.ScaleY = 1;
-            ret.OffsetY = pointList[0].Y - 1.5 * keyHeight;
+            ret.OffsetY = pointList[0].Y - 1.5 * ret.ScaleY * keyHeight;
             if (lr == 0)
             {
                 ret.OffsetX = pointList[0].X - ret.ScaleX * keyWidth;
+                ret.CenterX = ret.ScaleX * keyWidth;
+                ret.CenterY = 1.5 * keyHeight;
             } else
             {
                 ret.OffsetX = pointList[0].X - ret.ScaleX * 7 * keyWidth;
+                ret.CenterX = 7 * keyWidth;
+                ret.CenterY = 1.5 * keyHeight;
             }
             return ret;
         }

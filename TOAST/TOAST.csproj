@@ -61,6 +61,7 @@
     </ApplicationDefinition>
     <Compile Include="ParameterFitter.cs" />
     <Compile Include="TouchAnalyzer.cs" />
+    <Compile Include="TouchTracker.cs" />
     <Compile Include="WordPredictor.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

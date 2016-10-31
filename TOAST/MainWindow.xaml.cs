@@ -26,6 +26,9 @@ namespace TOAST
         public MainWindow()
         {
             InitializeComponent();
+            this.WindowState = WindowState.Maximized;
+            this.WindowStyle = WindowStyle.None;
+            
             for (int i=0; i<5; i++)
             {
                 candidates[i] = new TextBlock()
@@ -53,40 +56,64 @@ namespace TOAST
 
         private void TouchAnalyzer_registerHandPosition(object sender, PositionParams leftPositionParams, PositionParams rightPositionParams)
         {
+            Console.WriteLine("here register!!!!!!");
             kbd.LeftKeyboardParams = leftPositionParams;
             kbd.RightKeyboardParams = rightPositionParams;
+            Console.WriteLine("leftPositionParams:{0}, {1}", leftPositionParams.RotateAngle, leftPositionParams.RotTransform.Angle);
+            Console.WriteLine("rightPositionParams:{0}, {1}", rightPositionParams.RotateAngle, rightPositionParams.RotTransform.Angle);
+            kbd.drawKeyboard(mainCanvas);
+            kbd.reset();
         }
 
         private void MainCanvas_TouchUp(object sender, TouchEventArgs e)
         {
-            int id = e.TouchDevice.Id;
-            Point pos = e.GetTouchPoint(mainCanvas).Position;
-            touchAnalyzer.touchUp(pos, id);
+            Canvas _canvas = (Canvas)sender as Canvas;
+            if (_canvas != null && e.TouchDevice.Captured == _canvas)
+            {
+                int id = e.TouchDevice.Id;
+                Point pos = e.GetTouchPoint(mainCanvas).Position;
+                touchAnalyzer.touchUp(pos, id);
+                _canvas.ReleaseTouchCapture(e.TouchDevice);
+            }
         }
 
         private void MainCanvas_TouchMove(object sender, TouchEventArgs e)
         {
-            int id = e.TouchDevice.Id;
-            Point pos = e.GetTouchPoint(mainCanvas).Position;
-            touchAnalyzer.touchMove(pos, id);
+            Canvas _canvas = (Canvas)sender as Canvas;
+            if (_canvas != null)
+            {
+                int id = e.TouchDevice.Id;
+                Point pos = e.GetTouchPoint(mainCanvas).Position;
+                touchAnalyzer.touchMove(pos, id);
+            }            
         }
 
         private void MainCanvas_TouchDown(object sender, TouchEventArgs e)
         {
-            int id = e.TouchDevice.Id;
-            Point pos = e.GetTouchPoint(mainCanvas).Position;
-            touchAnalyzer.touchDown(pos, id);
+            Canvas _canvas = (Canvas)sender as Canvas;
+            if (_canvas != null)
+            {
+                e.TouchDevice.Capture(_canvas);
+                int id = e.TouchDevice.Id;
+                Point pos = e.GetTouchPoint(mainCanvas).Position;
+                touchAnalyzer.touchDown(pos, id);
+            }            
         }
 
         private void MainCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            kbd.type(e.GetPosition(mainCanvas));
+            //kbd.type(e.GetPosition(mainCanvas));
         }
 
         private void Kbd_CandidateChange(object sender, CandidateChangeEventArgs args)
         {
-            for (int i = 0; i < Math.Min(5, args.CandidateList.Count); i++)
+            int candidateNum = Math.Min(5, args.CandidateList.Count);
+            for (int i = 0; i < candidateNum; i++)
                 candidates[i].Text = args.CandidateList[i].Item1;
+            for (int i=candidateNum; i<5; i++)
+            {
+                candidates[i].Text = "";
+            }
         }
 
     }

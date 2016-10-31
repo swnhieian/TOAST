@@ -64,7 +64,7 @@ namespace TOAST
             Ay /= (sumyy - sumy * sumy / n);
             double Bx = suma / n - sumx * Math.Cos(C) / n * Ax + sumy * Math.Sin(C) / n * Ay;
             double By = sumb / n - sumx * Math.Sin(C) / n * Ax - sumy * Math.Cos(C) / n * Ay;
-            return new PositionParams(Bx, By, Ax, Ay, C);
+            return new PositionParams(Bx, By, Ax, Ay, C, 0, 0);
 
         }
     }

@@ -11,33 +11,58 @@ namespace TOAST
     delegate void RegisterHandPositionHandler(object sender, PositionParams leftPositionParams, PositionParams rightPositionParams);
     class TouchAnalyzer
     {
-        Dictionary<int, Point> screenPoints;
+        Dictionary<int, TouchTracker> screenPoints;
         public event RegisterHandPositionHandler registerHandPosition;
         public TouchAnalyzer()
         {
-            screenPoints = new Dictionary<int, Point>();
+            screenPoints = new Dictionary<int, TouchTracker>();
+        }
+        private TouchTracker getTouchTracker(int id)
+        {
+            Console.WriteLine("touch point num:{0}", screenPoints.Count);
+            TouchTracker touchTracker = null;
+            if (screenPoints.TryGetValue(id, out touchTracker))
+            {
+                return touchTracker;
+            }
+            if (touchTracker == null)
+            {
+                touchTracker = new TouchTracker();
+                screenPoints.Add(id, touchTracker);
+            }
+            return touchTracker;
         }
         public void touchDown(Point pos, int id)
         {
-            Debug.Assert(!screenPoints.ContainsKey(id));
-            screenPoints.Add(id, pos);
+            TouchTracker touchTracker = getTouchTracker(id);
+            if (touchTracker == null) return;
+            touchTracker.touchDown(pos);
             if (screenPoints.Count == 8)
             {
                 //register two hand
-                var sortedPoints = (from t in screenPoints orderby t.Value.X select t.Value).ToList();
+                var sortedPoints = (from t in screenPoints orderby t.Value.Pos.X select t.Value.Pos).ToList();
                 PositionParams left = Config.registerPosition(sortedPoints.Take(4).ToList(), 0);
-                sortedPoints.RemoveRange(0, 4);                
-                PositionParams right = Config.registerPosition(sortedPoints, 1);
+                //sortedPoints.RemoveRange(0, 4);
+                List<Point> rightList = new List<Point>();
+                rightList.Add(sortedPoints[4]);
+                rightList.Add(sortedPoints[5]);
+                rightList.Add(sortedPoints[6]);
+                rightList.Add(sortedPoints[7]);
+                PositionParams right = Config.registerPosition(rightList, 1);
                 registerHand(left, right);
             }
         }
         public void touchMove(Point pos, int id)
         {
-            Debug.Assert(screenPoints.ContainsKey(id));
+            TouchTracker touchTracker = getTouchTracker(id);
+            if (touchTracker == null) return;
+            touchTracker.touchMove(pos);
         }
         public void touchUp(Point pos, int id)
         {
-            Debug.Assert(screenPoints.ContainsKey(id));
+            TouchTracker touchTracker = getTouchTracker(id);
+            if (touchTracker == null) return;
+            touchTracker.touchUp(pos);
             screenPoints.Remove(id);
         }
 

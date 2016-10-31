@@ -77,8 +77,8 @@ namespace TOAST
 
         public Keyboard()
         {
-            LeftKeyboardParams = new PositionParams(100, 100, 1, 1, 0);
-            RightKeyboardParams = new PositionParams(300, 100, 1, 1, 0);
+            LeftKeyboardParams = new PositionParams(0, 0, 1, 1, 20, 0, 0);
+            RightKeyboardParams = new PositionParams(300, 100, 1, 1, 0, 0, 0);
             wordPredictor = new WordPredictor(this);
             currentInputPoints = new List<Point>();
 
@@ -97,6 +97,11 @@ namespace TOAST
             PositionParams actualParam = leftDis < rightDis ? leftKeyboardParams : rightKeyboardParams;
             Point typePos = actualParam.inverseTransform(pos);*/
             currentInputPoints.Add(pos);
+            updateInput();
+        }
+        public void reset()
+        {
+            currentInputPoints.Clear();
             updateInput();
         }
 
@@ -118,9 +123,10 @@ namespace TOAST
         {
             onCandidateChange(new CandidateChangeEventArgs(candidates));
         }
-
+        Rectangle[] keys = null;
         public void drawKeyboard(Canvas canvas)
         {
+            if (keys == null) keys = new Rectangle[26];
             string[] handCode = { "0", "0", "0", "0", "0", "0", "0", "1", "1", "1", "1", "1", "1", "1",
         "1", "1", "0", "0", "0", "0", "1", "0", "0", "0", "1", "0"};
             for (int i=0; i<26; i++)
@@ -129,19 +135,31 @@ namespace TOAST
                 Point oriPos = new Point(letterPosX[i], letterPosY[i]);
                 PositionParams positionParams = LeftRightPositionParams[lr];
                 Point pos = positionParams.transform(oriPos);
-                Rectangle rect = new Rectangle()
+                Rectangle rect = keys[i];
+                if (rect == null)
                 {
-                    Width = 41 * positionParams.ScaleX,
-                    Height = 44 * positionParams.ScaleY,
-                    Stroke = Brushes.Black,
-                    Margin = new Thickness(0),
-                    Fill = Brushes.Blue,
-                    StrokeThickness = 0.5
-                };
-                canvas.Children.Add(rect);
+                    rect = new Rectangle()
+                    {
+                        Width = 41 * positionParams.ScaleX,
+                        Height = 44 * positionParams.ScaleY,
+                        Stroke = Brushes.Black,
+                        Margin = new Thickness(0),
+                        Fill = Brushes.Blue,
+                        StrokeThickness = 0.5
+                    };
+                    keys[i] = rect;
+                    canvas.Children.Add(rect);
+                } else
+                {
+                    rect.Width = 41 * positionParams.ScaleX;
+                    rect.Height = 44 * positionParams.ScaleY;
+                }
                 Canvas.SetTop(rect, pos.Y);
                 Canvas.SetLeft(rect, pos.X);
+                //positionParams.RotTransform = new RotateTransform(positionParams.RotateAngle);
+                //rect.RenderTransform = positionParams.RotTransform;
                 rect.RenderTransform = new RotateTransform(positionParams.RotateAngle);
+                Console.WriteLine("in render::{0}", positionParams.RotTransform.Angle);
             }
         }
 
