@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,11 +31,16 @@ namespace TOAST
         }
     }
     public delegate void CandidateChangeHandler(object sender, CandidateChangeEventArgs args);
+    public delegate void SpaceHandler(object sender);
+    enum TypeClass { Type, LeftSpace, RightSpace};
     class Keyboard
     {
         public event CandidateChangeHandler CandidateChange;
+        public event SpaceHandler LeftSpace;
+        public event SpaceHandler RightSpace;
         //
         private PositionParams leftKeyboardParams, rightKeyboardParams;
+        private ParameterFitter parameterFittter;
 
         private WordPredictor wordPredictor;
         private List<Point> currentInputPoints;
@@ -74,30 +80,76 @@ namespace TOAST
                 rightKeyboardParams = value;
             }
         }
+        public int InputLength
+        {
+            get
+            {
+                return currentInputPoints.Count;
+            }
+        }
 
         public Keyboard()
         {
-            LeftKeyboardParams = new PositionParams(0, 0, 1, 1, 20, 0, 0);
-            RightKeyboardParams = new PositionParams(300, 100, 1, 1, 0, 0, 0);
+            LeftKeyboardParams = new PositionParams(0, 150, 1, 1, 0, 0, 0);
+            RightKeyboardParams = new PositionParams(300, 150, 1, 1, 0, 0, 0);
             wordPredictor = new WordPredictor(this);
             currentInputPoints = new List<Point>();
-
+            parameterFittter = new ParameterFitter(this);
         }
+
 
         public Keyboard(PositionParams leftKeyboardParams, PositionParams rightKeyboardParams)
         {
             this.LeftKeyboardParams = leftKeyboardParams;
             this.RightKeyboardParams = rightKeyboardParams;
         }
+        public TypeClass getTypeClass(Point pos)
+        {
+            Point actualLP = leftKeyboardParams.inverseTransform(pos);
+            Point actualRP = rightKeyboardParams.inverseTransform(pos);
+            bool isL = false, isR = false;
+            if (actualLP.X < letterPosX['n'-'a']-0.5*Config.keyWidth && actualLP.Y > letterPosY['n'-'a'] + 0.5*Config.keyHeight)
+            {
+                isL = true;
+            }
+            if (actualRP.X >= letterPosX['n'-'a']-0.5*Config.keyWidth && actualRP.Y > letterPosY['n'-'a'] + 0.5*Config.keyHeight)
+            {
+                isR = true;
+            }
+            if (isL && !isR)
+            {
+                return TypeClass.LeftSpace;
+            }
+            if (isR && !isL)
+            {
+                return TypeClass.RightSpace;
+            }
+            return TypeClass.Type;
+        }
 
         public void type(Point pos)
         {
-           /* double leftDis = leftKeyboard.dist(leftKeyboardParams, pos);
-            double rightDis = rightKeybaord.dist(rightKeyboardParams, pos);
-            PositionParams actualParam = leftDis < rightDis ? leftKeyboardParams : rightKeyboardParams;
-            Point typePos = actualParam.inverseTransform(pos);*/
-            currentInputPoints.Add(pos);
-            updateInput();
+            switch (getTypeClass(pos))
+            {
+                case TypeClass.Type:
+                    currentInputPoints.Add(pos);
+                    updateInput();
+                    break;
+                case TypeClass.LeftSpace:
+                    if (LeftSpace != null) LeftSpace(this);
+                    break;
+                case TypeClass.RightSpace:
+                    if (RightSpace != null) RightSpace(this);
+                    break;
+                default:
+                    break;
+            }            
+        }
+        public void select(Tuple<string, double, string> cand)
+        {
+            Debug.Assert(cand.Item1.Length == currentInputPoints.Count);
+            parameterFittter.select(currentInputPoints, cand);
+            this.reset();
         }
         public void reset()
         {
@@ -126,6 +178,7 @@ namespace TOAST
         Rectangle[] keys = null;
         public void drawKeyboard(Canvas canvas)
         {
+            temp_canvas = canvas;
             if (keys == null) keys = new Rectangle[26];
             string[] handCode = { "0", "0", "0", "0", "0", "0", "0", "1", "1", "1", "1", "1", "1", "1",
         "1", "1", "0", "0", "0", "0", "1", "0", "0", "0", "1", "0"};
@@ -140,8 +193,8 @@ namespace TOAST
                 {
                     rect = new Rectangle()
                     {
-                        Width = 41 * positionParams.ScaleX,
-                        Height = 44 * positionParams.ScaleY,
+                        Width = Config.keyWidth * positionParams.ScaleX,
+                        Height = Config.keyHeight * positionParams.ScaleY,
                         Stroke = Brushes.Black,
                         Margin = new Thickness(0),
                         Fill = Brushes.Blue,
@@ -151,16 +204,26 @@ namespace TOAST
                     canvas.Children.Add(rect);
                 } else
                 {
-                    rect.Width = 41 * positionParams.ScaleX;
-                    rect.Height = 44 * positionParams.ScaleY;
+                    rect.Width = Config.keyWidth * positionParams.ScaleX;
+                    rect.Height = Config.keyHeight * positionParams.ScaleY;
                 }
                 Canvas.SetTop(rect, pos.Y);
                 Canvas.SetLeft(rect, pos.X);
                 //positionParams.RotTransform = new RotateTransform(positionParams.RotateAngle);
                 //rect.RenderTransform = positionParams.RotTransform;
-                rect.RenderTransform = new RotateTransform(positionParams.RotateAngle);
-                Console.WriteLine("in render::{0}", positionParams.RotTransform.Angle);
+                rect.RenderTransform = new RotateTransform(positionParams.RotateAngle*180/Math.PI);
             }
+        }
+        public Canvas temp_canvas = null;
+        public void drawPoint(Canvas canvas, Point pos)
+        {
+            Ellipse e = new Ellipse();
+            e.Width = 5;
+            e.Height = 5;
+            e.Fill = Brushes.Yellow;
+            temp_canvas.Children.Add(e);
+            Canvas.SetTop(e, pos.Y);
+            Canvas.SetLeft(e, pos.X);           
         }
 
     }

@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Diagnostics;
 
 namespace TOAST
 {
@@ -22,14 +23,49 @@ namespace TOAST
     {
         Keyboard kbd;
         TouchAnalyzer touchAnalyzer = new TouchAnalyzer();
-        TextBlock[] candidates = new TextBlock[5];
+        TextBlock[] candidates = new TextBlock[Config.candidateNum];
+        RichTextBox inputTextBox = new RichTextBox();
+        Paragraph inputParagraph = new Paragraph();
+
+        private List<Tuple<string, double, string>> candidateList = new List<Tuple<string, double, string>>();
+        int selectedCandidateNo = 0;
+
+
+
         public MainWindow()
         {
+            double angle, x, y;
+            angle = 90;
+            x = 20;
+            y = 30;
+            double a = 0;
+            double b = 0;
+            RotateTransform rot = new RotateTransform(angle, a, b);
+            Point p = new Point(x, y);
+            Point transP = rot.Transform(p);
+            Point calcP = new Point(a + (x - a) * Math.Cos(angle) - (y - b) * Math.Sin(angle), b + (x - a) * Math.Sin(angle) + (y - b) * Math.Cos(angle));
             InitializeComponent();
             this.WindowState = WindowState.Maximized;
             this.WindowStyle = WindowStyle.None;
             
-            for (int i=0; i<5; i++)
+            mainCanvas.Background = Brushes.Red;
+            mainCanvas.PreviewMouseUp += MainCanvas_MouseUp;
+            mainCanvas.TouchDown += MainCanvas_TouchDown;
+            mainCanvas.TouchMove += MainCanvas_TouchMove;
+            mainCanvas.TouchUp += MainCanvas_TouchUp;
+            mainCanvas.KeyUp += MainCanvas_KeyUp;
+            this.KeyUp += MainCanvas_KeyUp;
+            kbd = new Keyboard();
+            kbd.CandidateChange += Kbd_CandidateChange;
+            kbd.LeftSpace += Kbd_LeftSpace;
+            kbd.RightSpace += Kbd_RightSpace;
+            kbd.drawKeyboard(mainCanvas);
+            touchAnalyzer.registerHandPosition += TouchAnalyzer_registerHandPosition;
+            touchAnalyzer.type += TouchAnalyzer_type;
+            touchAnalyzer.swipeLeft += TouchAnalyzer_swipeLeft;
+            touchAnalyzer.swipeRight += TouchAnalyzer_swipeRight;
+
+            for (int i = 0; i < Config.candidateNum; i++)
             {
                 candidates[i] = new TextBlock()
                 {
@@ -40,18 +76,93 @@ namespace TOAST
                     Foreground = Brushes.White
                 };
                 mainCanvas.Children.Add(candidates[i]);
-                Canvas.SetTop(candidates[i], 0);
+                Canvas.SetTop(candidates[i], Config.inputTextBoxHeight);
                 Canvas.SetLeft(candidates[i], candidates[i].Width * i + 20 * i);
+                candidates[i].TouchDown += ((sender, args) =>
+                {
+                    //Console.WriteLine("candidate touch down");
+                    //Console.WriteLine("select one word:{0},{1}", args.GetTouchPoint(mainCanvas).Position.X, args.GetTouchPoint(mainCanvas).Position.Y);
+                    TextBlock tb = args.Source as TextBlock;
+                    int no = candidates.ToList().IndexOf(tb);
+                    select(no);
+                    args.Handled = true;
+                });
+                candidates[i].TouchMove += ((sender, args) =>
+                {
+                    //Console.WriteLine("candidate touch move");
+                    args.Handled = true;
+                });
+                candidates[i].TouchUp += ((sender, args) =>
+                {
+                    //Console.WriteLine("candidate touch up");
+                    args.Handled = true;
+                });
             }
-            mainCanvas.Background = Brushes.Red;
-            mainCanvas.PreviewMouseUp += MainCanvas_MouseUp;
-            mainCanvas.TouchDown += MainCanvas_TouchDown;
-            mainCanvas.TouchMove += MainCanvas_TouchMove;
-            mainCanvas.TouchUp += MainCanvas_TouchUp;
-            kbd = new Keyboard();
-            kbd.CandidateChange += Kbd_CandidateChange;
-            kbd.drawKeyboard(mainCanvas);
-            touchAnalyzer.registerHandPosition += TouchAnalyzer_registerHandPosition;
+
+
+            FlowDocument flowDoc = new FlowDocument();
+            inputTextBox.Document = flowDoc;
+            inputParagraph.FontFamily = new FontFamily("Courier New");
+            inputParagraph.FontSize = Config.inputFontSize;
+            flowDoc.Blocks.Add(inputParagraph);
+            inputTextBox.Width = Config.inputTextBoxWidth;
+            inputTextBox.Height = Config.inputTextBoxHeight ;
+            mainCanvas.Children.Add(inputTextBox);
+            Canvas.SetTop(inputTextBox, 0);
+        }
+        private void select(int no)
+        {
+            inputParagraph.Inlines.Add(new Run(candidates[no].Text + " "));
+            kbd.select(candidateList[no]);
+            selectedCandidateNo = 0;
+            renderCandidate();
+        }
+
+        private void Kbd_RightSpace(object sender)
+        {
+            if (candidateList.Count == 0) return;
+            select(selectedCandidateNo);
+        }
+
+        private void Kbd_LeftSpace(object sender)
+        {
+            if (candidateList.Count == 0) return;
+            selectedCandidateNo = (selectedCandidateNo + 1) % candidateList.Count;
+            renderCandidate();
+        }
+
+        private void TouchAnalyzer_swipeRight(object sender)
+        {
+            select(selectedCandidateNo);
+        }
+
+        private void TouchAnalyzer_swipeLeft(object sender)
+        {
+            if (kbd.InputLength > 0)
+            {
+                kbd.reset();
+            } else
+            {
+                /// to do : 
+                /// delete input word
+                inputParagraph.Inlines.Remove(inputParagraph.Inlines.LastInline);
+            }
+            selectedCandidateNo = 0;
+            renderCandidate();
+        }
+
+        private void MainCanvas_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                inputParagraph.Inlines.Clear();
+            }
+
+        }
+
+        private void TouchAnalyzer_type(object sender, Point pos)
+        {
+            kbd.type(pos);
         }
 
         private void TouchAnalyzer_registerHandPosition(object sender, PositionParams leftPositionParams, PositionParams rightPositionParams)
@@ -59,8 +170,8 @@ namespace TOAST
             Console.WriteLine("here register!!!!!!");
             kbd.LeftKeyboardParams = leftPositionParams;
             kbd.RightKeyboardParams = rightPositionParams;
-            Console.WriteLine("leftPositionParams:{0}, {1}", leftPositionParams.RotateAngle, leftPositionParams.RotTransform.Angle);
-            Console.WriteLine("rightPositionParams:{0}, {1}", rightPositionParams.RotateAngle, rightPositionParams.RotTransform.Angle);
+            //Console.WriteLine("leftPositionParams:{0}, {1}", leftPositionParams.RotateAngle, leftPositionParams.RotTransform.Angle);
+            //Console.WriteLine("rightPositionParams:{0}, {1}", rightPositionParams.RotateAngle, rightPositionParams.RotTransform.Angle);
             kbd.drawKeyboard(mainCanvas);
             kbd.reset();
         }
@@ -107,12 +218,37 @@ namespace TOAST
 
         private void Kbd_CandidateChange(object sender, CandidateChangeEventArgs args)
         {
-            int candidateNum = Math.Min(5, args.CandidateList.Count);
-            for (int i = 0; i < candidateNum; i++)
-                candidates[i].Text = args.CandidateList[i].Item1;
-            for (int i=candidateNum; i<5; i++)
+            candidateList.Clear();
+            int t = 0;
+            int len = args.CandidateList.Count;
+            while (t < len && candidateList.Count < Config.candidateNum)
+            {
+                string word = args.CandidateList[t].Item1;
+                if (!candidateList.Exists(x => x.Item1 == word))
+                {
+                    candidateList.Add(args.CandidateList[t]);
+                }
+                t++;
+            }
+            for (int i = 0; i < candidateList.Count; i++)
+            {
+                candidates[i].Text = candidateList[i].Item1;
+                candidates[i].Visibility = Visibility.Visible;
+            }
+            for (int i = candidateList.Count; i<Config.candidateNum; i++)
             {
                 candidates[i].Text = "";
+                candidates[i].Visibility = Visibility.Hidden;
+            }
+            renderCandidate();
+        }
+        private void renderCandidate()
+        {
+            for (int i=0; i<candidateList.Count; i++)
+            {
+                candidates[i].Foreground = (i == selectedCandidateNo) ? Config.selectedCandidateForeground : Config.candidateForeground;
+                candidates[i].Background = (i == selectedCandidateNo) ? Config.selectedCandidateBackground : Config.candidateBackground;
+
             }
         }
 

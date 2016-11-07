@@ -16,6 +16,7 @@ namespace TOAST
         private double centerX, centerY;
         private RotateTransform rotTransform;
 
+        //angle is in rad but in rotatetransform angle must be in degree
         public PositionParams(double xOffset, double yOffset, double xScale, double yScale, double angle, double centerX, double centerY)
         {
             this.offsetX = xOffset;
@@ -25,19 +26,20 @@ namespace TOAST
             this.rotateAngle = angle;
             this.centerX = centerX;
             this.centerY = centerY;
-            RotTransform = new RotateTransform(rotateAngle,scaleX * centerX + offsetX, scaleY * centerY + OffsetY);
+            RotTransform = new RotateTransform(rotateAngle*180/Math.PI,scaleX * centerX + offsetX, scaleY * centerY + OffsetY);
         }
         public Point transform(Point pos)
         {
             double newX = scaleX * pos.X + offsetX;
             double newY = scaleY * pos.Y + offsetY;
             return RotTransform.Transform(new Point(newX, newY));
+            //return new Point(newX, newY);
         }
         public Point inverseTransform(Point pos)
         {
             Point tempP = RotTransform.Inverse.Transform(pos);
-            double newX = (pos.X - offsetX) / scaleX;
-            double newY = (pos.Y - offsetY) / scaleY;
+            double newX = (tempP.X - offsetX) / scaleX;
+            double newY = (tempP.Y - offsetY) / scaleY;
             return new Point(newX, newY);
         }
 
@@ -107,7 +109,7 @@ namespace TOAST
             set
             {
                 rotateAngle = value;
-                rotTransform.Angle = value;
+                rotTransform.Angle = value * 180 / Math.PI;
             }
         }
 
@@ -150,6 +152,10 @@ namespace TOAST
                 centerY = value;
                 RotTransform.CenterY = value * scaleY + OffsetY;
             }
+        }
+        public override string ToString()
+        {
+            return String.Format("off:{0},{1}\nsca:{2},{3}\nang:{4}\ncen:{5},{6}", offsetX, offsetY, scaleX, scaleY, rotateAngle, centerX, centerY);
         }
     }
 }

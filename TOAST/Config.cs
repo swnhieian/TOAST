@@ -4,13 +4,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 
 namespace TOAST
 {
     static class Config
     {
+        public static int candidateNum = 5;
+        public static int fitThreshold = 20;
         public static double keyWidth = 41;
         public static double keyHeight = 44;
+        /////
+        public static int inputTextBoxHeight = 50;
+        public static int inputTextBoxWidth = 1000;
+        public static int inputFontSize = 30;
+        /////
+        public static Brush candidateForeground = Brushes.White;
+        public static Brush candidateBackground = Brushes.Black;
+        public static Brush selectedCandidateForeground = Brushes.Black;
+        public static Brush selectedCandidateBackground = Brushes.White;
         public static double logGaussianDistribution(double x, double mu, double sigma)
         {
             return -Math.Log(Math.Sqrt(2 * Math.PI)) - Math.Log(sigma) - (x - mu) * (x - mu) / (2 * sigma * sigma);
@@ -21,9 +33,9 @@ namespace TOAST
             int n = pointList.Count;
             double a = fitLine(pointList).Item1;
             PositionParams ret = new PositionParams(0,0,0,0,0,0,0);
-            ret.RotateAngle = Math.Atan(a) * 180 / Math.PI;
-            ret.ScaleX = (pointList[n - 1].X - pointList[0].X) / ((n - 1) * keyWidth);
-            ret.ScaleY = 1;
+            ret.RotateAngle = Math.Atan(a);// * 180 / Math.PI;
+            ret.ScaleX = getDis(pointList[n - 1], pointList[0]) / ((n - 1) * keyWidth);
+            ret.ScaleY = ret.ScaleX;
             ret.OffsetY = pointList[0].Y - 1.5 * ret.ScaleY * keyHeight;
             if (lr == 0)
             {
@@ -37,6 +49,10 @@ namespace TOAST
                 ret.CenterY = 1.5 * keyHeight;
             }
             return ret;
+        }
+        public static double getDis(Point pos1, Point pos2)
+        {
+            return Math.Sqrt(Math.Pow(pos1.X - pos2.X, 2) + Math.Pow(pos1.Y - pos2.Y, 2));
         }
 
         public static Tuple<double, double> fitLine(List<Point> pointList)

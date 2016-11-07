@@ -88,6 +88,12 @@ namespace TOAST
             {
                 return new List<Tuple<string, double, string>>();
             }
+            Point[,] actualPos = new Point[length, 2];
+            for (int i=0; i< length; i++)
+            {
+                actualPos[i, 0] = keyboard.LeftKeyboardParams.inverseTransform(pointList[i]);
+                actualPos[i, 1] = keyboard.RightKeyboardParams.inverseTransform(pointList[i]);
+            }
             List<Tuple<string, double, string>> ret = new List<Tuple<string, double, string>>();
             foreach (var cand in lenFreqDict[length]) // cand: item1 word item2 freq item3 handcode
             {
@@ -97,22 +103,22 @@ namespace TOAST
                 for (int i=0; i< length; i++)
                 {
                     int lr = int.Parse(cand.Item3[i].ToString());
-                    Point actualPos = keyboard.LeftRightPositionParams[lr].inverseTransform(pointList[i]);
+                    Point actualPoint = actualPos[i, lr];
                     if (last[lr] == -1) // the first char using absolute model
                     {
                         double muX = keyboard.letterPosX[cand.Item1[i] - 'a'];
                         double muY = keyboard.letterPosY[cand.Item1[i] - 'a'];
                         double sigmaX = 20;
                         double sigmaY = 15;
-                        prob += Config.logGaussianDistribution(actualPos.X, muX, sigmaX);
-                        prob += Config.logGaussianDistribution(actualPos.Y, muY, sigmaY);
+                        prob += Config.logGaussianDistribution(actualPoint.X, muX, sigmaX);
+                        prob += Config.logGaussianDistribution(actualPoint.Y, muY, sigmaY);
                     } else // use relative model
                     {
-                        Point lastActualPos = keyboard.LeftRightPositionParams[lr].inverseTransform(pointList[last[lr]]);
+                        Point lastActualPoint = actualPos[last[lr], lr];
                         double kbdVecX = keyboard.letterPosX[cand.Item1[i] - 'a'] - keyboard.letterPosX[cand.Item1[last[lr]] - 'a'];
                         double kbdVecY = keyboard.letterPosY[cand.Item1[i] - 'a'] - keyboard.letterPosY[cand.Item1[last[lr]] - 'a'];
-                        double vecX = actualPos.X - lastActualPos.X;
-                        double vecY = actualPos.Y - lastActualPos.Y;
+                        double vecX = actualPoint.X - lastActualPoint.X;
+                        double vecY = actualPoint.Y - lastActualPoint.Y;
                         double sigmaX = 20;
                         double sigmaY = 15;
                         prob += Config.logGaussianDistribution(vecX, kbdVecX, sigmaX);
