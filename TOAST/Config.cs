@@ -19,6 +19,8 @@ namespace TOAST
         public static int inputTextBoxWidth = 1000;
         public static int inputFontSize = 30;
         /////
+        public static Brush mainCanvasBackgroundInvalid = Brushes.Gray;
+        public static Brush mainCanvasBackground = Brushes.Black;
         public static Brush candidateForeground = Brushes.White;
         public static Brush candidateBackground = Brushes.Black;
         public static Brush selectedCandidateForeground = Brushes.Black;

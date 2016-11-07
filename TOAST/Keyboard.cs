@@ -108,11 +108,11 @@ namespace TOAST
             Point actualLP = leftKeyboardParams.inverseTransform(pos);
             Point actualRP = rightKeyboardParams.inverseTransform(pos);
             bool isL = false, isR = false;
-            if (actualLP.X < letterPosX['n'-'a']-0.5*Config.keyWidth && actualLP.Y > letterPosY['n'-'a'] + 0.5*Config.keyHeight)
+            if (actualLP.X < letterPosX['n'-'a']-0.5*Config.keyWidth && actualLP.Y > letterPosY['n'-'a'] + 0.8*Config.keyHeight)
             {
                 isL = true;
             }
-            if (actualRP.X >= letterPosX['n'-'a']-0.5*Config.keyWidth && actualRP.Y > letterPosY['n'-'a'] + 0.5*Config.keyHeight)
+            if (actualRP.X >= letterPosX['n'-'a']-0.5*Config.keyWidth && actualRP.Y > letterPosY['n'-'a'] + 0.8*Config.keyHeight)
             {
                 isR = true;
             }

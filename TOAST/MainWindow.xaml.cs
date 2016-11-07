@@ -22,7 +22,7 @@ namespace TOAST
     public partial class MainWindow : Window
     {
         Keyboard kbd;
-        TouchAnalyzer touchAnalyzer = new TouchAnalyzer();
+        TouchAnalyzer touchAnalyzer;
         TextBlock[] candidates = new TextBlock[Config.candidateNum];
         RichTextBox inputTextBox = new RichTextBox();
         Paragraph inputParagraph = new Paragraph();
@@ -34,21 +34,12 @@ namespace TOAST
 
         public MainWindow()
         {
-            double angle, x, y;
-            angle = 90;
-            x = 20;
-            y = 30;
-            double a = 0;
-            double b = 0;
-            RotateTransform rot = new RotateTransform(angle, a, b);
-            Point p = new Point(x, y);
-            Point transP = rot.Transform(p);
-            Point calcP = new Point(a + (x - a) * Math.Cos(angle) - (y - b) * Math.Sin(angle), b + (x - a) * Math.Sin(angle) + (y - b) * Math.Cos(angle));
             InitializeComponent();
             this.WindowState = WindowState.Maximized;
             this.WindowStyle = WindowStyle.None;
-            
-            mainCanvas.Background = Brushes.Red;
+            touchAnalyzer = new TouchAnalyzer(mainCanvas);
+
+            mainCanvas.Background = Config.mainCanvasBackgroundInvalid;
             mainCanvas.PreviewMouseUp += MainCanvas_MouseUp;
             mainCanvas.TouchDown += MainCanvas_TouchDown;
             mainCanvas.TouchMove += MainCanvas_TouchMove;
@@ -60,6 +51,7 @@ namespace TOAST
             kbd.LeftSpace += Kbd_LeftSpace;
             kbd.RightSpace += Kbd_RightSpace;
             kbd.drawKeyboard(mainCanvas);
+            touchAnalyzer.startRegister += TouchAnalyzer_startRegister;
             touchAnalyzer.registerHandPosition += TouchAnalyzer_registerHandPosition;
             touchAnalyzer.type += TouchAnalyzer_type;
             touchAnalyzer.swipeLeft += TouchAnalyzer_swipeLeft;
@@ -110,6 +102,8 @@ namespace TOAST
             mainCanvas.Children.Add(inputTextBox);
             Canvas.SetTop(inputTextBox, 0);
         }
+
+        
         private void select(int no)
         {
             inputParagraph.Inlines.Add(new Run(candidates[no].Text + " "));
@@ -165,11 +159,18 @@ namespace TOAST
             kbd.type(pos);
         }
 
+        private void TouchAnalyzer_startRegister(object sender)
+        {
+            mainCanvas.Background = Config.mainCanvasBackgroundInvalid;
+        }
+
+
         private void TouchAnalyzer_registerHandPosition(object sender, PositionParams leftPositionParams, PositionParams rightPositionParams)
         {
-            Console.WriteLine("here register!!!!!!");
+            //Console.WriteLine("here register!!!!!!");
             kbd.LeftKeyboardParams = leftPositionParams;
             kbd.RightKeyboardParams = rightPositionParams;
+            mainCanvas.Background = Config.mainCanvasBackground;
             //Console.WriteLine("leftPositionParams:{0}, {1}", leftPositionParams.RotateAngle, leftPositionParams.RotTransform.Angle);
             //Console.WriteLine("rightPositionParams:{0}, {1}", rightPositionParams.RotateAngle, rightPositionParams.RotTransform.Angle);
             kbd.drawKeyboard(mainCanvas);
