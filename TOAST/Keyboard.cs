@@ -47,7 +47,11 @@ namespace TOAST
         // Calculated from Standard Keyboard Image
         //public double[] letterPosX = new double[] { 743.5, 928.5, 846.5, 825.5, 806.5, 866.5, 907.5, 948.5, 1011.5, 989.5, 1030.5, 1071.5,
         //    1010.5, 969.5, 1052.5, 1093.5,724.5, 847.5, 784.5, 888.5, 970.5, 887.5, 765.5, 805.5, 929.5, 764.5};
-        public double[] letterPosX = new double[] { 39.5, 224.5, 142.5, 121.5, 102.5, 162.5, 203.5, 244.5, 307.5, 285.5, 326.5, 367.5, 306.5, 265.5, 348.5, 389.5, 20.5, 143.5, 80.5, 184.5, 266.5, 183.5, 61.5, 101.5, 225.5, 60.5 };
+       // public double[] letterPosX = new double[] { 39.5, 224.5, 142.5, 121.5, 102.5, 162.5, 203.5, 244.5, 307.5, 285.5, 326.5, 367.5, 306.5, 265.5, 348.5, 389.5, 20.5, 143.5, 80.5, 184.5, 266.5, 183.5, 61.5, 101.5, 225.5, 60.5 };
+        //public double[]
+        public double[] letterPosX = new double[] { 41.0, 225.5, 143.5, 123.0, 102.5, 164.0, 205.0, 246.0, 307.5, 287.0, 328.0, 369.0, 307.5, 266.5, 348.5, 389.5, 20.5, 143.5, 82.0, 184.5, 266.5, 184.5, 61.5, 102.5, 225.5, 61.5 };
+
+
         //public double[] letterPosY = new double[] { 616.4, 660.4, 660.4, 616.4, 572.4, 616.4, 616.4, 616.4, 572.4, 616.4, 616.4, 616.4,
         //    660.4, 660.4, 572.4, 572.4, 572.4, 572.4, 616.4, 572.4, 572.4, 660.4, 572.4, 660.4, 572.4, 660.4 };
         public double[] letterPosY = new double[] { 66.0, 110.0, 110.0, 66.0, 22.0, 66.0, 66.0, 66.0, 22.0, 66.0, 66.0, 66.0, 110.0, 110.0, 22.0, 22.0, 22.0, 22.0, 66.0, 22.0, 22.0, 110.0, 22.0, 110.0, 22.0, 110.0 };
@@ -108,21 +112,21 @@ namespace TOAST
             Point actualLP = leftKeyboardParams.inverseTransform(pos);
             Point actualRP = rightKeyboardParams.inverseTransform(pos);
             bool isL = false, isR = false;
-            if (actualLP.X < letterPosX['n'-'a']-0.5*Config.keyWidth && actualLP.Y > letterPosY['n'-'a'] + 0.8*Config.keyHeight)
+            if (actualLP.X < letterPosX['n'-'a'] + 0.5*Config.keyWidth && actualLP.Y > letterPosY['n'-'a'] + 0.8*Config.keyHeight)
             {
                 isL = true;
             }
-            if (actualRP.X >= letterPosX['n'-'a']-0.5*Config.keyWidth && actualRP.Y > letterPosY['n'-'a'] + 0.8*Config.keyHeight)
+            if (actualRP.X >= letterPosX['t'-'a']-0.5*Config.keyWidth && actualRP.Y > letterPosY['n'-'a'] + 0.8*Config.keyHeight)
             {
                 isR = true;
             }
             if (isL && !isR)
             {
-                return TypeClass.LeftSpace;
+                //return TypeClass.LeftSpace;
             }
             if (isR && !isL)
             {
-                return TypeClass.RightSpace;
+                //return TypeClass.RightSpace;
             }
             return TypeClass.Type;
         }
@@ -149,12 +153,22 @@ namespace TOAST
         {
             Debug.Assert(cand.Item1.Length == currentInputPoints.Count);
             parameterFittter.select(currentInputPoints, cand);
-            this.reset();
+            this.clear();
         }
-        public void reset()
+        public void delete()
+        {
+            currentInputPoints.Remove(currentInputPoints.Last());
+            updateInput();
+        }
+        public void clear()
         {
             currentInputPoints.Clear();
             updateInput();
+        }
+        public void reset()
+        {
+            clear();
+            parameterFittter.reset();
         }
 
         public void updateInput()
@@ -195,9 +209,9 @@ namespace TOAST
                     {
                         Width = Config.keyWidth * positionParams.ScaleX,
                         Height = Config.keyHeight * positionParams.ScaleY,
-                        Stroke = Brushes.Black,
+                        Stroke = Brushes.White,
                         Margin = new Thickness(0),
-                        Fill = Brushes.Blue,
+                        Fill = Brushes.Transparent,
                         StrokeThickness = 0.5
                     };
                     keys[i] = rect;
@@ -207,8 +221,8 @@ namespace TOAST
                     rect.Width = Config.keyWidth * positionParams.ScaleX;
                     rect.Height = Config.keyHeight * positionParams.ScaleY;
                 }
-                Canvas.SetTop(rect, pos.Y);
-                Canvas.SetLeft(rect, pos.X);
+                Canvas.SetTop(rect, pos.Y - rect.Height / 2);
+                Canvas.SetLeft(rect, pos.X - rect.Width / 2);
                 //positionParams.RotTransform = new RotateTransform(positionParams.RotateAngle);
                 //rect.RenderTransform = positionParams.RotTransform;
                 rect.RenderTransform = new RotateTransform(positionParams.RotateAngle*180/Math.PI);

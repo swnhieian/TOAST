@@ -4,20 +4,27 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace TOAST
 {
     static class Config
     {
         public static int candidateNum = 5;
+        public static int candidateDefault = -1;
         public static int fitThreshold = 20;
         public static double keyWidth = 41;
         public static double keyHeight = 44;
+
         /////
-        public static int inputTextBoxHeight = 50;
-        public static int inputTextBoxWidth = 1000;
+        public static double inputTextBoxHeight = 50;
+        public static double candidateHeight = inputTextBoxHeight;
+        public static double inputTextBoxWidth = SystemParameters.PrimaryScreenWidth;
+        public static double candidateInterval = 20;
         public static int inputFontSize = 30;
+        public static int candidateFontSize = 30;
         /////
         public static Brush mainCanvasBackgroundInvalid = Brushes.Gray;
         public static Brush mainCanvasBackground = Brushes.Black;
@@ -42,12 +49,12 @@ namespace TOAST
             if (lr == 0)
             {
                 ret.OffsetX = pointList[0].X - ret.ScaleX * keyWidth;
-                ret.CenterX = ret.ScaleX * keyWidth;
+                ret.CenterX = keyWidth;
                 ret.CenterY = 1.5 * keyHeight;
             } else
             {
-                ret.OffsetX = pointList[0].X - ret.ScaleX * 7 * keyWidth;
-                ret.CenterX = 7 * keyWidth;
+                ret.OffsetX = pointList[0].X - ret.ScaleX * 6 * keyWidth;
+                ret.CenterX = 6 * keyWidth;
                 ret.CenterY = 1.5 * keyHeight;
             }
             return ret;
@@ -67,6 +74,17 @@ namespace TOAST
             double a = (sumXY - sumX * sumY / n) / (sumXX - sumX * sumX / n);
             double b = sumY / n - a * sumX / n;
             return new Tuple<double, double>(a, b);
+        }
+        public static void drawPoint(Canvas canvas, Point pos, int flag = 0)
+        {
+            Ellipse e = new Ellipse();
+            e.Width = 5 + flag * 4;
+            e.Height = 5 + flag* 4;
+            e.Fill = Brushes.Yellow;
+            if (flag == 1) e.Fill = Brushes.Red;
+            canvas.Children.Add(e);
+            Canvas.SetTop(e, pos.Y);
+            Canvas.SetLeft(e, pos.X);
         }
     }
 }

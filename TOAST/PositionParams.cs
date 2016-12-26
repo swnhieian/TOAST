@@ -43,6 +43,17 @@ namespace TOAST
             return new Point(newX, newY);
         }
 
+        public static PositionParams avg(PositionParams param1, PositionParams param2)
+        {
+            double ox = (param1.OffsetX + param2.OffsetX) / 2;
+            double oy = (param1.OffsetY + param2.OffsetY) / 2;
+            double sx = (param1.ScaleX + param2.ScaleX) / 2;
+            double sy = (param1.ScaleY + param2.ScaleY) / 2;
+            double a = (param1.RotateAngle + param2.RotateAngle) / 2;
+            PositionParams ret = new PositionParams(ox, oy, sx, sy, a, 0, 0);
+            return ret;
+        }
+
         public double OffsetX
         {
             get
@@ -136,7 +147,7 @@ namespace TOAST
             set
             {
                 centerX = value;
-                rotTransform.CenterX = value * scaleX + offsetX;
+                RotTransform.CenterX = value * scaleX + offsetX;
             }
         }
 

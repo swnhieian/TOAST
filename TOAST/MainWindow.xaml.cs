@@ -28,7 +28,7 @@ namespace TOAST
         Paragraph inputParagraph = new Paragraph();
 
         private List<Tuple<string, double, string>> candidateList = new List<Tuple<string, double, string>>();
-        int selectedCandidateNo = 0;
+        int selectedCandidateNo = Config.candidateDefault;
 
 
 
@@ -56,20 +56,25 @@ namespace TOAST
             touchAnalyzer.type += TouchAnalyzer_type;
             touchAnalyzer.swipeLeft += TouchAnalyzer_swipeLeft;
             touchAnalyzer.swipeRight += TouchAnalyzer_swipeRight;
+            touchAnalyzer.swipeLeftLong += TouchAnalyzer_swipeLeftLong;
+            touchAnalyzer.select += select;
+            touchAnalyzer.selecting += selecting;
 
+            double candidateWidth = (Config.inputTextBoxWidth - Config.candidateInterval * (Config.candidateNum - 1)) / Config.candidateNum;
             for (int i = 0; i < Config.candidateNum; i++)
             {
                 candidates[i] = new TextBlock()
                 {
-                    Width = 200,
-                    Height = 50,
-                    FontSize = 20,
+                    Width = candidateWidth,
+                    Height = Config.candidateHeight,
+                    FontSize = Config.candidateFontSize,
                     Background = Brushes.Black,
-                    Foreground = Brushes.White
+                    Foreground = Brushes.White,
+                    Visibility = Visibility.Hidden
                 };
                 mainCanvas.Children.Add(candidates[i]);
                 Canvas.SetTop(candidates[i], Config.inputTextBoxHeight);
-                Canvas.SetLeft(candidates[i], candidates[i].Width * i + 20 * i);
+                Canvas.SetLeft(candidates[i], candidates[i].Width * i + Config.candidateInterval * i);
                 candidates[i].TouchDown += ((sender, args) =>
                 {
                     //Console.WriteLine("candidate touch down");
@@ -98,17 +103,45 @@ namespace TOAST
             inputParagraph.FontSize = Config.inputFontSize;
             flowDoc.Blocks.Add(inputParagraph);
             inputTextBox.Width = Config.inputTextBoxWidth;
-            inputTextBox.Height = Config.inputTextBoxHeight ;
+            inputTextBox.Focusable = false;
+            inputTextBox.MinHeight = Config.inputTextBoxHeight;
+            inputTextBox.TextChanged += InputTextBox_TextChanged;
             mainCanvas.Children.Add(inputTextBox);
             Canvas.SetTop(inputTextBox, 0);
         }
 
-        
+        public string getInputContent()
+        {
+            string ret = "";
+            foreach(var t in inputParagraph.Inlines)
+            {
+                ret += ((Run)t).Text;
+            }
+            return ret;
+        }
+
+        private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string text = getInputContent();
+        }
+
+        private void TouchAnalyzer_swipeLeftLong(object sender)
+        {
+            kbd.clear();
+        }
+
         private void select(int no)
         {
+            if (candidateList.Count < no + 1) return;
+            if (no < 0) return;
             inputParagraph.Inlines.Add(new Run(candidates[no].Text + " "));
             kbd.select(candidateList[no]);
-            selectedCandidateNo = 0;
+            selectedCandidateNo = Config.candidateDefault;
+            renderCandidate();
+        }
+        private void selecting(int no)
+        {
+            selectedCandidateNo = no;
             renderCandidate();
         }
 
@@ -120,28 +153,32 @@ namespace TOAST
 
         private void Kbd_LeftSpace(object sender)
         {
-            if (candidateList.Count == 0) return;
+            if (candidateList.Count == 0)
+            {
+                inputParagraph.Inlines.Remove(inputParagraph.Inlines.LastInline);
+                return;
+            }
             selectedCandidateNo = (selectedCandidateNo + 1) % candidateList.Count;
             renderCandidate();
         }
 
         private void TouchAnalyzer_swipeRight(object sender)
         {
-            select(selectedCandidateNo);
+            kbd.clear();
         }
 
         private void TouchAnalyzer_swipeLeft(object sender)
         {
             if (kbd.InputLength > 0)
             {
-                kbd.reset();
+                kbd.delete();
             } else
             {
                 /// to do : 
                 /// delete input word
                 inputParagraph.Inlines.Remove(inputParagraph.Inlines.LastInline);
             }
-            selectedCandidateNo = 0;
+            selectedCandidateNo = Config.candidateDefault;
             renderCandidate();
         }
 
@@ -167,7 +204,6 @@ namespace TOAST
 
         private void TouchAnalyzer_registerHandPosition(object sender, PositionParams leftPositionParams, PositionParams rightPositionParams)
         {
-            //Console.WriteLine("here register!!!!!!");
             kbd.LeftKeyboardParams = leftPositionParams;
             kbd.RightKeyboardParams = rightPositionParams;
             mainCanvas.Background = Config.mainCanvasBackground;
@@ -175,6 +211,7 @@ namespace TOAST
             //Console.WriteLine("rightPositionParams:{0}, {1}", rightPositionParams.RotateAngle, rightPositionParams.RotTransform.Angle);
             kbd.drawKeyboard(mainCanvas);
             kbd.reset();
+            inputParagraph.Inlines.Clear();
         }
 
         private void MainCanvas_TouchUp(object sender, TouchEventArgs e)
@@ -241,6 +278,7 @@ namespace TOAST
                 candidates[i].Text = "";
                 candidates[i].Visibility = Visibility.Hidden;
             }
+            selectedCandidateNo = Config.candidateDefault;
             renderCandidate();
         }
         private void renderCandidate()
@@ -249,7 +287,7 @@ namespace TOAST
             {
                 candidates[i].Foreground = (i == selectedCandidateNo) ? Config.selectedCandidateForeground : Config.candidateForeground;
                 candidates[i].Background = (i == selectedCandidateNo) ? Config.selectedCandidateBackground : Config.candidateBackground;
-
+                Canvas.SetTop(candidates[i], inputTextBox.ActualHeight);
             }
         }
 

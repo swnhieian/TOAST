@@ -13,13 +13,15 @@ namespace TOAST
     delegate void TypeHandler(object sender, Point pos);
     delegate void SwipeHander(object sender);
     delegate void StartRegisterHandler(object sender);
+    delegate void SelectCandidate(int num);
     class TouchAnalyzer
     {
         Dictionary<int, TouchTracker> screenPoints;
         public event RegisterHandPositionHandler registerHandPosition;
         public event StartRegisterHandler startRegister;
         public event TypeHandler type;
-        public event SwipeHander swipeLeft, swipeRight;
+        public event SwipeHander swipeLeft, swipeRight, swipeLeftLong;
+        public event SelectCandidate selecting, select;
         private bool isRegistering = false;
         private bool registerComplete = false;
         private Canvas mainCanvas;
@@ -63,8 +65,9 @@ namespace TOAST
                 rightList.Add(sortedPoints[7]);
                 PositionParams right = Config.registerPosition(rightList, 1);
                 registerHand(left, right);
+                //Console.WriteLine("left{0},{1},right{2},{3}", left.ScaleX, left.ScaleY, right.ScaleX, right.ScaleY);
                 registerComplete = true;
-            } else if (screenPoints.Count > 3) {
+            } else if (screenPoints.Count > 5) {
                 startRegister(this);
                 registerComplete = false;
             }
@@ -76,6 +79,10 @@ namespace TOAST
             TouchTracker touchTracker = getTouchTracker(id);
             if (touchTracker == null) return;
             touchTracker.touchMove(pos);
+            if (touchTracker.Select >= 0)
+            {
+                selecting(touchTracker.Select);
+            }
         }
         public void touchUp(Point pos, int id)
         {
@@ -83,20 +90,30 @@ namespace TOAST
             TouchTracker touchTracker = getTouchTracker(id);
             if (touchTracker == null) return;
             touchTracker.touchUp(pos);            
-            if (screenPoints.Count == 1 && !isRegistering && registerComplete)
+            if (/*screenPoints.Count == 1 &&*/ !isRegistering && registerComplete)
             {
-                TouchType touchType = screenPoints.Values.ToList()[0].Type;
-                if (touchType == TouchType.Type && type != null)
+                TouchType touchType = touchTracker.Type;
+                if (touchTracker.Select >= 0)
                 {
-                    type(this, touchTracker.Pos);
+                    select(touchTracker.Select);
                 }
-                if (touchType == TouchType.SwipeLeft && swipeLeft != null)
-                {
-                    swipeLeft(this);
-                }
-                if (touchType == TouchType.SwipeRight && swipeRight != null)
-                {
-                    swipeRight(this);
+                else {
+                    if (touchType == TouchType.Type && type != null)
+                    {
+                        type(this, touchTracker.Pos);
+                    }
+                    if (touchType == TouchType.SwipeLeft && swipeLeft != null)
+                    {
+                        swipeLeft(this);
+                    }
+                    if (touchType == TouchType.SwipeRight && swipeRight != null)
+                    {
+                        //swipeRight(this);
+                    }
+                    if (touchType == TouchType.SwipeLeftLong && swipeLeftLong != null)
+                    {
+                        swipeLeftLong(this);
+                    }
                 }
             }
             screenPoints.Remove(id);
